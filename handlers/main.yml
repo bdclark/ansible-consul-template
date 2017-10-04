@@ -1,0 +1,9 @@
+---
+- name: reload systemd
+  command: systemctl daemon-reload
+
+- name: restart consul-template
+  service:
+    name: "{{ consul_template_service_name }}"
+    state: restarted
+  when: consul_template_service_managed|bool and consul_template_service_state == 'started'

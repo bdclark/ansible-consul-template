@@ -1,0 +1,82 @@
+---
+- name: update apt
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+
+- name: install unzip
+  package:
+    name: unzip
+    state: present
+
+- name: ensure download directory
+  file:
+    state: directory
+    path: "{{ consul_template_zip_dir }}"
+    recurse: yes
+
+- name: download checksum file
+  get_url:
+    url: "{{ consul_template_checksum_url }}"
+    dest: "{{ consul_template_zip_dir }}/{{ consul_template_checksum_file }}"
+
+- name: write hashicorp gpg key file
+  copy:
+    src: hashicorp.asc
+    dest: /etc/hashicorp.asc
+    owner: root
+    group: root
+    mode: 0644
+  when: consul_template_verify_checksum_signature|bool
+
+- name: import hashicorp gpg key
+  command: gpg --import /etc/hashicorp.asc
+  register: consul_template_gpg_key_imported
+  changed_when: no
+  when: consul_template_verify_checksum_signature|bool
+
+- name: download checksum signature file
+  get_url:
+    url: "{{ consul_template_signature_url }}"
+    dest: "{{ consul_template_zip_dir }}/{{ consul_template_signature_file }}"
+  when: consul_template_verify_checksum_signature|bool
+
+- name: verify checksum file
+  command: gpg --batch --verify {{ consul_template_zip_dir }}/{{ consul_template_signature_file }} {{ consul_template_zip_dir }}/{{ consul_template_checksum_file }}
+  changed_when: no
+  when: consul_template_verify_checksum_signature|bool
+
+- name: get checksum of consul-template zip
+  command:  grep {{ consul_template_zip }} {{ consul_template_zip_dir }}/{{ consul_template_checksum_file }}
+  register: consul_template_checksum
+  changed_when: no
+
+- name: download consul-template zip
+  get_url:
+    url: "{{ consul_template_zip_url }}"
+    dest: "{{ consul_template_zip_dir }}/{{ consul_template_zip }}"
+    checksum: "sha256:{{ consul_template_checksum.stdout.split(' ')|first }}"
+
+- name: create binary directory
+  file:
+    state: directory
+    path: "{{ consul_template_bin_dir }}/consul-template-{{ consul_template_version }}"
+    owner: root
+    group: root
+    recurse: yes
+
+- name: extract consul-template zip
+  unarchive:
+    src: "{{ consul_template_zip_dir }}/{{ consul_template_zip }}"
+    dest: "{{ consul_template_bin_dir }}/consul-template-{{ consul_template_version }}"
+    copy: no
+    creates: "{{ consul_template_bin_dir }}/consul-template-{{ consul_template_version }}/consul-template"
+  notify: restart consul-template
+
+- name: symlink consul-template binary
+  file:
+    state: link
+    src: "{{ consul_template_bin_dir }}/consul-template-{{ consul_template_version }}/consul-template"
+    dest: "{{ consul_template_bin_dir }}/consul-template"
+  notify: restart consul-template

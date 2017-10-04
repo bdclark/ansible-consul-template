@@ -1,0 +1,6 @@
+---
+- assert:
+   that: ansible_service_mgr == 'upstart' or ansible_service_mgr == 'systemd'
+
+- include: install.yml
+- include: config.yml

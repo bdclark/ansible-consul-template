@@ -1,0 +1,12 @@
+description "{{ consul_template_service_name }}"
+
+start on (local-filesystems and net-device-up IFACE!=lo)
+stop on runlevel [06]
+
+respawn
+respawn limit 10 10
+kill timeout 20
+
+setuid {{ consul_template_user }}
+setgid {{ consul_template_group }}
+exec "{{ consul_template_bin_dir }}/consul-template" $CTMPL_OPTIONS -config="{{ consul_template_conf_dir }}"

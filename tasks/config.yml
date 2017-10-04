@@ -1,0 +1,76 @@
+---
+- name: create service group
+  group:
+    name: "{{ consul_template_group }}"
+    system: yes
+  when: consul_template_user_managed
+
+- name: create service user
+  user:
+    name: "{{ consul_template_user }}"
+    group: "{{ consul_template_group }}"
+    createhome: no
+    system: yes
+    shell: /bin/false
+    comment: Consul-Template service user
+  when: consul_template_user_managed
+
+- name: create config directory
+  file:
+    state: directory
+    path: "{{ consul_template_conf_dir }}"
+    owner: "{{ consul_template_conf_dir_owner }}"
+    group: "{{ consul_template_group }}"
+    mode: "{{ consul_template_conf_dir_mode }}"
+
+- name: write config file
+  no_log: true
+  copy:
+    content: "{{ consul_template_config | to_nice_json }}"
+    dest: "{{ consul_template_conf_dir }}/config.json"
+    owner: "{{ consul_template_user }}"
+    group: "{{ consul_template_group }}"
+    mode: 0640
+  notify:
+    - restart consul-template
+
+- name: write templates config file
+  copy:
+    content: "{{ {'template': consul_template_templates} | to_nice_json }}"
+    dest: "{{ consul_template_conf_dir }}/templates.json"
+    owner: "{{ consul_template_user }}"
+    group: "{{ consul_template_group }}"
+    mode: 0640
+  when: consul_template_templates|length > 0
+  notify:
+    - restart consul-template
+
+- name: upstart init script
+  template:
+    src: upstart.j2
+    dest: /etc/init/{{ consul_template_service_name }}.conf
+    owner: root
+    group: root
+    mode: 0644
+  when: ansible_service_mgr == 'upstart'
+  notify:
+    - restart consul-template
+
+- name: systemd init script
+  template:
+    src: systemd.j2
+    dest: /etc/systemd/system/{{ consul_template_service_name }}.service
+    owner: root
+    group: root
+    mode: 0755
+  when: ansible_service_mgr == 'systemd'
+  notify:
+    - reload systemd
+    - restart consul-template
+
+- name: manage service
+  service:
+    name: "{{ consul_template_service_name }}"
+    state: "{{ consul_template_service_state }}"
+    enabled: "{{ consul_template_service_enabled }}"
+  when: consul_template_service_managed

@@ -1,0 +1,17 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    consul_template_templates:
+      - source: /tmp/testfile.ctmpl
+        destination: /tmp/testfile.txt
+        command: /bin/true
+  roles:
+    - role: consul-template
+  tasks:
+    - package:
+        name: jq
+        state: present
+    - copy:
+        content: hello
+        dest: /tmp/testfile.ctmpl

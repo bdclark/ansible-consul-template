@@ -1,0 +1,39 @@
+---
+consul_template_version: 0.19.3
+
+consul_template_zip: "consul-template_{{ consul_template_version }}_linux_amd64.zip"
+consul_template_zip_url: "https://releases.hashicorp.com/consul-template/{{ consul_template_version }}/{{ consul_template_zip }}"
+
+consul_template_checksum_file: "consul-template_{{ consul_template_version }}_SHA256SUMS"
+consul_template_checksum_url: "https://releases.hashicorp.com/consul-template/{{ consul_template_version }}/{{ consul_template_checksum_file }}"
+
+consul_template_verify_checksum_signature: true
+consul_template_signature_file: "{{ consul_template_checksum_file }}.sig"
+consul_template_signature_url: "https://releases.hashicorp.com/consul-template/{{ consul_template_version }}/{{ consul_template_signature_file }}"
+
+consul_template_zip_checksum: "{{ consul_template_checksums[consul_template_zip] }}"
+consul_template_zip_dir: /tmp             # path to download zip file before extraction
+
+consul_template_bin_dir: /usr/local/bin   # dir to extract consul-template binary
+
+consul_template_service_name: consul-template # name of service (only change if multiple)
+consul_template_service_managed: true         # create/start/restart service
+consul_template_service_state: started        # desired state of service
+consul_template_service_enabled: yes          # 'no' if service disabled
+
+consul_template_conf_dir: "/etc/{{ consul_template_service_name }}/conf.d"
+
+consul_template_user_managed: yes
+consul_template_user: "{{ consul_template_service_name }}"
+consul_template_group: "{{ consul_template_service_name }}"
+consul_template_conf_dir_owner: root
+consul_template_conf_dir_mode: 0750
+
+consul_template_config: {}
+consul_template_templates: []
+  # - source: /path/to/my.ctmpl
+  #   destination: /path/to/dest
+  #   command: service restart foo
+  # - source: /path/to/other.ctpml
+  #   destination: /path/to/other/dest
+  #   command: service bar foo

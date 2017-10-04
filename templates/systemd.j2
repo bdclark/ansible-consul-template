@@ -1,0 +1,15 @@
+[Unit]
+Description={{ consul_template_service_name }}
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+User={{ consul_template_user }}
+Group={{ consul_template_group }}
+EnvironmentFile=-/etc/default/consul-template
+ExecStart="{{ consul_template_bin_dir }}/consul-template" -config="{{ consul_template_conf_dir }}"
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
