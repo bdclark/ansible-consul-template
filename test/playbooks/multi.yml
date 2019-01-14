@@ -1,0 +1,45 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    consul_template_templates:
+      - source: /tmp/testfile.ctmpl
+        destination: /tmp/testfile.txt
+        command: /bin/true
+  roles:
+    - role: consul-template
+  tasks:
+    - name: instll jq
+      package:
+        name: jq
+        state: present
+
+    - name: add test template for instance 1
+      copy:
+        content: hello-1
+        dest: /tmp/testfile-1.ctmpl
+
+    - name: add test template for instance 2
+      copy:
+        content: hello-2
+        dest: /tmp/testfile-2.ctmpl
+
+    - name: configure consul-template instance 1
+      import_role:
+        name: consul-template
+      vars:
+        consul_template_service_name: consul-template-1
+        consul_template_templates:
+          - source: /tmp/testfile-1.ctmpl
+            destination: /tmp/testfile-1.txt
+            command: /bin/true
+
+    - name: configure consul-template instance 2
+      import_role:
+        name: consul-template
+      vars:
+        consul_template_service_name: consul-template-2
+        consul_template_templates:
+          - source: /tmp/testfile-2.ctmpl
+            destination: /tmp/testfile-2.txt
+            command: /bin/true

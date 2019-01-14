@@ -20,3 +20,6 @@ suites:
   - name: default
     provisioner:
       playbook: test/playbooks/default.yml
+  - name: multi
+    provisioner:
+      playbook: test/playbooks/multi.yml
